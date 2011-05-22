@@ -1,0 +1,183 @@
+<html>
+<head>
+<title>Johnny&#39;s&nbsp;Software&nbsp;Lab</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="Keywords" content="ブログパーツ,楽天,アフィリエイト" />
+<script type="text/javascript" src="js/jquery-1.5.1.min.js"></script>
+<script type="text/javascript" src="js/jquery-fonteffect-1.0.0.min.js"></script>
+<link rel="stylesheet" type="text/css" href="css/mirror.css" media="screen">
+<link rel="stylesheet" type="text/css" href="css/menu.css" media="screen"/>
+<style type="text/css">
+	*{ padding:0px; margin:0px; }
+	img{ border: none; -ms-interpolation-mode: bicubic; }
+	body{ padding:10px; text-align:center; background:#fafafa; }
+	
+	#wrapper{ position:absolute; left:20%; padding-top:0px; width:650px;}
+	
+	#menuwrapper{ position:relative; height:150px;}
+	#menuframe{position:absolute; bottom:0; left:0;}
+	.menuitem{ position:fixed relative; bottom:0px; display:inline-block; }
+</style>
+<script type="text/javascript">
+$(function(){
+//http://api.rakuten.co.jp/rws/2.0/rest?developerId=e486ffafeed3dd3e47b13157558631b7&operation=BooksGenreSearch&version=2009-03-26&booksGenreId=001005005004
+//http://api.rakuten.co.jp/rws/3.0/json?developerId=e486ffafeed3dd3e47b13157558631b7&affiliateId=0bcac755.75c99406.0bcac756.d6fa9ba5&operation=BooksBookSearch&version=2011-01-27&booksGenreId=001005005004
+    $.ajax({
+        type: 'GET',
+        url : 'http://api.rakuten.co.jp/rws/3.0/json?',
+        data: {
+            "developerId": "e486ffafeed3dd3e47b13157558631b7",
+            "affiliateId": "0bcac755.75c99406.0bcac756.d6fa9ba5",
+            "operation": "BooksBookSearch",
+            "version" : "2011-01-27",
+            "booksGenreId": "001005005004",
+            "sort": "sales"
+	    },
+        dataType: 'jsonp',
+        jsonp: 'callBack',
+        success: function(json) {
+            //$('.menuitem').remove();
+            if(json.Header.Status == 'Success') {
+            	var num = 0;
+            	$.each(json.Body.BooksBookSearch.Items.Item, function(i, item) {
+            		if (num > 5) {
+            			return;
+            		}
+            		var imageUrl     = item.largeImageUrl;
+            		if (imageUrl.match(/noimage_01\.gif/)) {
+            			return;
+            		}
+            		var affiliateUrl = item.affiliateUrl;
+            		//$('#menuitem').append('<a href="' + affiliateUrl + '" target="_blank" class="menuitem"><img src="' + imageUrl + '" /></a>');
+            		$('#aflUrl' + num).attr('href', affiliateUrl);
+            		$('#imgUrl' + num).attr('src' , imageUrl);
+            		num++;
+            	});
+            }
+        }
+    });
+	$('#mirror').FontEffect({
+	    gradient:true,
+	    mirror:true,
+	    mirrorColor:"#298d79"
+	})
+	$('#menu > li').hover(
+		function () {
+		    var $this = $(this);
+		    $('a',$this).stop(true,true).animate({
+		            'bottom':'-15px'
+		        }, 300);
+		    $('i',$this).stop(true,true).animate({
+		            'top':'-10px'
+		        }, 400);
+		},
+		function () {
+		    var $this = $(this);
+		    $('a',$this).stop(true,true).animate({
+		            'bottom':'-95px'
+		        }, 300);
+		    $('i',$this).stop(true,true).animate({
+		            'top':'50px'
+		        }, 400);
+		}
+	);
+	$('.menuitem img').animate({width: 100}, 0);
+	$('.menuitem').mouseover(function(){
+			gridimage = $(this).find('img');
+			gridimage.stop().animate({width: 200}, 150);
+		}).mouseout(function(){
+			gridimage.stop().animate({width: 100}, 150);
+	});
+	tabDisplay('top');
+});
+function tabDisplay(tabName) {
+	$("div#top").hide();
+	$("div#profile").hide();
+	$("div#works").hide();
+	$("div#links").hide();
+	$("div#" + tabName).show();
+}
+</script>
+</head>
+<body bgcolor="lightgray" onload="tabDisplay('top');">
+	<div align="center">
+		<h1 id="hptitle"><a id="mirror" href="http://lightning-develop.appspot.com/index.html">Johnny&#39;s&nbsp;Software&nbsp;Lab</a></h1>
+        <div class="container">
+			<div id="top"><br>
+				<h2>Welcome to Johnny's Software Lab</h2><br>
+				Hi! My name is Johnny. I'm developing software at this site.
+				<br><br>
+				<h2>Infomation</h2>
+				<br>
+				2011/05/04&nbsp;Site renewal
+			</div>
+			<div id="profile"><br><br>
+				Name:Johnny・H・Kikkawa<br><br>
+				Nationality:Japan<br><br>
+				Job:Software Engineering<br><br>
+				about.me:<a href="http://about.me/johnny.k">http://about.me/johnny.k</a><br>
+			</div>
+			<div id="works">
+				<br>
+				<a href="http://lightning-develop.appspot.com/genreWidget/linkmake/index.html">楽天ジャンル商品ブログパーツ</a><br>
+				ジャンルを軸に、キーワード、価格帯などでお手軽自動更新で楽天商品を紹介できるアフィリエイトツールです。<br>
+				<br>
+				<a href="http://lightning-develop.appspot.com/iphone/index.html">iphone用商品検索twitter投稿ツール</a><br>
+				iPhone専用のアフィリエイトツールです。キーワードと価格帯で商品を検索し、ツイッターに投稿できます。<br>
+			</div>
+			<div id="links">
+				<br>
+				<a href="http://www.best-ss.com/">ベストスキーサービス</a><br>
+				スキーチューンナップなら、高品質・即納のベストスキーサービスがお勧め！八王子、上尾で店舗も展開中です！<br>
+				<br>
+				<a href="http://hb.afl.rakuten.co.jp/hsc/0d0d95e4.082dad69.0d0d95e1.0dafc43f/_RTblog10000014" target="_blank"><img src="http://hbb.afl.rakuten.co.jp/hsb/0d0d95e4.082dad69.0d0d95e1.0dafc43f/166766/" border="0"></a><br>
+				クレジットカードなら楽天KCクレジットカードがお得！普段の買い物もポイントがつくし、楽天での買い物ならポイント2倍。
+				契約するだけで2000ポイント以上もらえるし、年会費無料ときてる。
+				ここまでいたれりつくせりで、他のカード使うとか、理由を問いただしたいね。
+				ほんっとお勧めです！
+
+			</div>
+            <ul id="menu">
+                <li>
+                    <a onmouseover="tabDisplay('top');">
+                        <span class="title">Top</span>
+                        <span class="description">Top<br>&<br>Infomation</span>
+                    </a>
+                </li>
+                <li>
+                    <a onmouseover="tabDisplay('profile');">
+                        <span class="title">Profile</span>
+                        <span class="description">My profile</span>
+                    </a>
+                </li>
+                <li>
+                    <a onmouseover="tabDisplay('works');">
+                        <span class="title">Works</span>
+                        <span class="description">My Softwares</span>
+                    </a>
+                </li>
+                <li>
+                    <a onmouseover="tabDisplay('links');">
+                        <span class="title">Links</span>
+                        <span class="description">My Links</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+		<br>
+		<div id="wrapper">
+			<div id="menuwrapper">
+				<div id="menuframe">
+					<a id="aflUrl0" href="" class="menuitem"><img id="imgUrl0" src=""></a>
+					<a id="aflUrl1" href="" class="menuitem"><img id="imgUrl1" src=""></a>
+					<a id="aflUrl2" href="" class="menuitem"><img id="imgUrl2" src=""></a>
+					<a id="aflUrl3" href="" class="menuitem"><img id="imgUrl3" src=""></a>
+					<a id="aflUrl4" href="" class="menuitem"><img id="imgUrl4" src=""></a>
+				</div>
+			</div>
+		</div>
+		<br><br><br><br><br><br><br><br><br><br>
+		<img src="http://code.google.com/appengine/images/appengine-silver-120x30.gif" alt="Powered by Google App Engine" />
+	</div>
+</body>
+</html>

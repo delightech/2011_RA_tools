@@ -1,0 +1,363 @@
+<html>
+    <head>
+        <title>Affiliate Tool for Twitter</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <link type="text/css" rel="stylesheet" media="screen" href="index.css">
+        <link type="text/css" rel="stylesheet" media="screen" href="jqtouch/jqtouch.css">
+        <link type="text/css" rel="stylesheet" media="screen" href="themes/jqt/theme.css">
+        <script type="text/javascript" src="jqtouch/jquery.js"></script>
+        <script type="text/javascript" src="jqtouch/jqtouch.js"></script>
+        <script type="text/javascript">
+            var searchWord = '';
+            var minPrice = '';
+            var maxPrice = '';
+            var jQT = $.jQTouch({
+                icon: 'icon.png',
+                //addGlossToIcon: true,
+                statusBar: 'black',
+            });
+            $(document).ready(function(){
+
+                /*メモ
+                 * 空白で区切ると複数のid、classの組み合わせで処理を適用できる。
+                 * カンマ区切りだと指定したid、class全てに処理を適用してしまう。
+                 */
+
+                // .formは自動送信。submitは、formを送信してキーボードを自動で閉じる。
+                $('#search').click(search);
+                $('#save').click(saveSettings);
+                $('#settings').bind('pageAnimationStart', loadSettings);
+            });
+
+            /**
+             * 楽天WEBサービスAPIで商品検索をする関数
+             * @param {Object} reqPage ページ番号
+             */
+            function search(reqPage) {
+                /*
+                 * reqPageは、#searchのイベントハンドラとしても使っているので、
+                 * オブジェクトが入ってくることもある。
+                 * isNaNで数値かチェックして、trueならデフォルト(1)を設定しておく。
+                 */
+                if (isNaN(reqPage)) reqPage = 1;
+                var apiURL = 'http://api.rakuten.co.jp/rws/3.0/json?';
+                //alert('test' + $('#searchWord').val());
+                searchWord = $('#searchWord').val();
+                if (searchWord == '') {
+                    alert('Please input a SearchWord!');
+                    return false;
+                }
+                
+                if (localStorage.afId == null || localStorage.afId == 'undefined' || localStorage.afId == '') localStorage.afId = "0bcac755.75c99406.0bcac756.d6fa9ba5";
+                var searchData = {
+                        "developerId": "e486ffafeed3dd3e47b13157558631b7",     //localStorage.devId
+                        "affiliateId": localStorage.afId,
+                        "operation": "ItemSearch",
+                        "keyword": searchWord,
+                        "version" : "2010-09-15",
+                        "hits": "5",
+                        "page": reqPage,
+                        "sort": "-itemPrice"
+                };
+                
+                minPrice = $('#minPrice').val();
+                maxPrice = $('#maxPrice').val();
+                if (minPrice != '') {
+                    if (isNaN(minPrice)) {
+                        alert('Please input only numbers!');
+                        return false;
+                    }
+                    searchData.minPrice = minPrice;
+                } else {
+                    searchData.minPrice = 0;
+                }
+                if (maxPrice != '') {
+                    if (isNaN(maxPrice)) {
+                        alert('Please input only numbers!');
+                        return false;
+                    }
+                    if (Number(maxPrice) >= Number(minPrice)) {
+                        searchData.maxPrice = maxPrice;
+                    } else {
+                        alert('Please input correct range of price!');
+                        return false;
+                    }
+                }
+                $.ajax({
+                    type: 'GET',
+                    url: apiURL,
+                    // TODO localStorageを有効にするか、ログインしてもらってアフィリトップからリンクIDを抽出する。
+                    data: searchData,
+//                    async: false,
+                    dataType: 'jsonp',
+                    jsonp: 'callBack',
+                    success: function(json) {
+                        //alert(json.Header.Status);
+                        if(json.Header.Status == 'Success') {
+
+                            // 全商品件数
+                            var count = json.Body.ItemSearch.count;
+                            // 現在のページ番号
+                            var page = json.Body.ItemSearch.page;
+                            // 検索結果の何件目からか
+                            var first = json.Body.ItemSearch.first;
+                            // 検索結果の何件目までか
+                            var last = json.Body.ItemSearch.last;
+                            // 総ページ数(最大100)
+                            var pageCount = json.Body.ItemSearch.pageCount;
+
+                            $('#page').remove();
+                            var aTag = '';
+                            // TODO 正しいページング実装
+                            if (count > 0) {
+                                var delta = 2;
+                                if (reqPage == 1 && (reqPage + delta) <= pageCount) {
+                                    aTag += reqPage + '&nbsp;&nbsp;|&nbsp;&nbsp;'
+                                    aTag += '<a href="#" onClick="paging('+ (reqPage + 1) +');">' + (reqPage + 1) + '</a>&nbsp;&nbsp;|&nbsp;&nbsp;';
+                                    aTag += '<a href="#" onClick="paging('+ (reqPage + 2) +');">' + (reqPage + 2) + '</a>&nbsp;&nbsp;|&nbsp;&nbsp;';
+                                    aTag += '<a href="#" onClick="paging('+ (reqPage + 3) +');">' + (reqPage + 3) + '</a>&nbsp;&nbsp;|&nbsp;&nbsp;';
+                                    aTag += '<a href="#" onClick="paging('+ (reqPage + 4) +');">' + (reqPage + 4) + '</a>&nbsp;&nbsp;|&nbsp;&nbsp;';
+                                } else if (reqPage == 2 && (reqPage + delta) <= pageCount) {
+                                    aTag += '<a href="#" onClick="paging('+( reqPage - 1) +');">' + (reqPage - 1) + '</a>&nbsp;&nbsp;|&nbsp;&nbsp;';
+                                    aTag += reqPage + '&nbsp;&nbsp;|&nbsp;&nbsp;'
+                                    aTag += '<a href="#" onClick="paging('+ (reqPage + 1) +');">' + (reqPage + 1) + '</a>&nbsp;&nbsp;|&nbsp;&nbsp;';
+                                    aTag += '<a href="#" onClick="paging('+ (reqPage + 2) +');">' + (reqPage + 2) + '</a>&nbsp;&nbsp;|&nbsp;&nbsp;';
+                                    aTag += '<a href="#" onClick="paging('+ (reqPage + 3) +');">' + (reqPage + 3) + '</a>&nbsp;&nbsp;|&nbsp;&nbsp;';
+
+                                } else if ((reqPage - delta) > 0 && (reqPage + delta) <= pageCount) {
+                                    aTag += '<a href="#" onClick="paging('+ (reqPage - 2) +');">' + (reqPage - 2) + '</a>&nbsp;&nbsp;|&nbsp;&nbsp;';
+                                    aTag += '<a href="#" onClick="paging('+ (reqPage - 1) +');">' + (reqPage - 1) + '</a>&nbsp;&nbsp;|&nbsp;&nbsp;';
+                                    aTag += reqPage + '&nbsp;&nbsp;|&nbsp;&nbsp;'
+                                    aTag += '<a href="#" onClick="paging('+ (reqPage + 1) +');">' + (reqPage + 1) + '</a>&nbsp;&nbsp;|&nbsp;&nbsp;';
+                                    aTag += '<a href="#" onClick="paging('+ (reqPage + 2) +');">' + (reqPage + 2) + '</a>&nbsp;&nbsp;|&nbsp;&nbsp;';
+                                } else if((reqPage - delta) > 0 &&  (reqPage + delta) > pageCount) {
+                                    aTag += '<a href="#" onClick="paging('+ (reqPage - 2)  +');">' + (reqPage - 2) + '</a>&nbsp;&nbsp;|&nbsp;&nbsp;';
+                                    aTag += '<a href="#" onClick="paging('+ (reqPage - 1) +');">' + (reqPage - 1) + '</a>&nbsp;&nbsp;|&nbsp;&nbsp;';
+                                    aTag += reqPage + '&nbsp;&nbsp;|&nbsp;&nbsp;'
+                                    if ((reqPage + 1) <= pageCount) {
+                                        aTag += '<a href="#" onClick="paging('+ (reqPage - 1) +');">' + (reqPage - 1) + '</a>&nbsp;&nbsp;|&nbsp;&nbsp;';
+                                    }
+                                } else if((reqPage - delta) <= 0) {
+                                    if(reqPage == 2) {
+                                        aTag += '<a href="#" onClick="paging('+ (reqPage - 1) +');">' + (reqPage - 1) + '</a>&nbsp;&nbsp;|&nbsp;&nbsp;';
+                                        aTag += reqPage + '&nbsp;&nbsp;|&nbsp;&nbsp;'
+                                    } else {
+                                        aTag += reqPage + '&nbsp;&nbsp;|&nbsp;&nbsp;'
+                                    }
+                                } else {
+                                    aTag += reqPage + '&nbsp;&nbsp;|&nbsp;&nbsp;'
+                                }
+/*
+                                for (var i=1; i <= 5; i++) {
+                                    if (reqPage == i) {
+                                        aTag += i + '&nbsp;&nbsp;|&nbsp;&nbsp;'
+                                    } else {
+                                        if (i > 5) {
+                                            aTag += '...';
+                                            break;
+                                        }
+                                        aTag += '<a href="#" onClick="paging('+ i +');">' + i + '</a>&nbsp;&nbsp;|&nbsp;&nbsp;';
+                                    }
+                                }
+*/
+                                $('#page').remove();
+                                $('#home').append('<span id="page">' + aTag + '&nbsp;&nbsp;' + first + '～' + last + '(' + count + ')');
+                            }
+                            $('#results').remove();
+                            $('#resultsTitle').remove();
+                            $('#home').append('<h2 id="resultsTitle">Results</h2>');
+                            $('#home').append('<ul class="metal" id="results" />');
+                            $.each(json.Body.ItemSearch.Items.Item, function(i, item) {
+                                var itemName  = item.itemName;
+                                var itemPrice = item.itemPrice;
+                                //var catchcopy = item.catchcopy;
+                                //var itemCaption = item.itemCaption;
+                                //var affiliateUrl = makeShortUrl(item.affiliateUrl);
+                                $.ajax({
+                                    type: 'GET',
+                                    url: 'http://api.bit.ly/v3/shorten?',
+                                    processData: 'false',
+                                    data: {
+                                        "login": "chataro55",
+                                        "apiKey": "R_ae63ba24c0f140edb4a7493ffa854c1d",
+                                        "longUrl": item.affiliateUrl,
+                                        "format": "json"
+                                    },
+//                                    async: false,
+                                    dataType: 'jsonp',
+                                    //jsonp: 'callback_method',
+                                    success: function(json){
+                                        if (json.status_code == '200') {
+                                            var affiliateUrl = encodeURIComponent(json.data.url);
+                                            // デフォルトはNO IMAGE画像
+                                            var imageUrl = 'http://thumbnail.image.rakuten.co.jp/@0_mall/bookcenter/cabinet/noimage.gif?_ex=96x96';
+                                            if (item.imageFlag == 1) {
+                                                imageUrl = item.mediumImageUrl;
+                                            }
+                                            // リンクはページルートのページIDのdiv直下にul,li,aで貼らないと機能しないっぽい。
+                                            //$('<li class="arrow" />').append('<a href="#detail" onClick="makeItemPage(\'' + itemName + '\', \'' + itemPrice + '\', \'' + imageUrl + '\', \'' + item.affiliateUrl + '\');"><image src="' + imageUrl + '" /><em>' + itemName + '<br />' + itemPrice + '</em></a>').appendTo("#results");
+                                            $('<li class="arrow" />').append('<a href="#detail' + i + '"><image src="' + imageUrl + '" /><em>' + itemName + '<br />￥' + itemPrice + '</em></a>').appendTo("#results");
+
+                                            $('div#item' + i).remove();
+                                            $('#detail' + i).append('<div id="item' + i +'" />');
+                                            $('div#item' + i).append('<ul class="metal"><li class="arrow"><a href="http://mobile.twitter.com/home/?status=' + encodeURIComponent(itemName) + ':' + affiliateUrl + '\" target="_blank"><image src="' + imageUrl + '" /><br/>' + itemName + '<br />' + '￥' + itemPrice + '</a></li></ul>');
+                                        }
+                                    }
+                                });
+                            });
+                        }
+                    }
+                });
+                return false;
+            }
+            function saveSettings() {
+                localStorage.afId  = $('#afId').val();
+                //localStorage.devId = $('#devId').val();
+                jQT.goBack();
+                return false;
+            }
+            function loadSettings() {
+                $('#afId').val(localStorage.afId);
+                //$('#devId').val(localStorage.devId);
+            }
+            /*
+            function makeItemPage(itemName, itemPrice, imageUrl, affiliateUrl) {
+                // 毎回itemごと削除してitemごと作る。h2もpも。
+                $('div#item').remove();
+                $('#detail').append('<div id="item" />');
+                $('div#item').append('<p class="info"><a href="http://twitter.com/home/?status=' + itemName + ':' + affiliateUrl + '\" target="_blank" onClick="twitter(\'' + itemName + '\', \'' + affiliateUrl + '\');">Item Name:' + itemName + '<br />' + 'Price:' + itemPrice + '</a>');
+            }
+            // twitter投稿
+            function twitter(itemName, affiliateUrl) {
+                window.location = 'http://twitter.com/home/?status=' + itemName + ':' + affiliateUrl;
+            }
+
+            function makeShortUrl(longUrl) {
+                $.ajax({
+                    type: 'GET',
+                    url: 'http://api.bit.ly/v3/shorten?',
+                    processData: 'false',
+                    data: {
+                        "login": "chataro55",
+                        "apiKey": "R_ae63ba24c0f140edb4a7493ffa854c1d",
+                        "longUrl": longUrl,
+                        "format": "json"
+                    },
+                    async: false,
+                    dataType: 'jsonp',
+//                    jsonp: 'callback_method',
+                    success: function(json){
+//                        alert(json.data.url);
+                        return json.data.url;
+                    }
+                });
+            }
+            function makeShortUrlForGoogle(longUrl) {
+                $.ajax({
+                    type: 'GET',
+                    url: 'https://www.googleapis.com/urlshortener/v1/url',
+                    //processData: 'false',
+                    data: {
+                        "key": "AIzaSyClgS8ipBuRK21Um7plW2dfjsJniCyfRJc",
+                        "longUrl": longUrl
+                    },
+                    dataType: 'jsonp',
+                    jsonp: 'callback',
+                    contentType: 'application/json',
+                    success: function(json){
+                        alert(json.id);
+                        return json.id;
+                    }
+                });
+            }
+            */
+            function paging(page) {
+                search(page);
+            }
+        </script>
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-21181726-1']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+    </head>
+    <body>
+        <div id="home">
+            <div class="toolbar">
+                <h1>Affiliate Tool for Twitter</h1>
+                <a class="button flip" href="#settings">Settings</a>
+            </div>
+            <ul class="rounded">
+                <li><input placeholder="Search Word" type="text" id="searchWord" value="" /></li>
+                <li><input placeholder="maxPrice" type="text" id="maxPrice" value="" /></li>
+                <li><input placeholder="minPrice" type="text" id="minPrice" value="" /></li>
+            </ul>
+            <center><input type="button" id="search" value="Search" /></center>
+            <!--<form><input type="submit" class="submit" id="search" value="search" /></form>
+            <!-- <a href="#" id="page1" onClick="paging(1);" >1</a> -->
+        </div>
+        <div id="detail0">
+            <div class="toolbar">
+                <a class="button back" href="#">back</a>
+                <h1>Detail</h1>
+                <a class="button flip" href="#settings">Settings</a>
+            </div>
+        </div>
+        <div id="detail1">
+            <div class="toolbar">
+                <a class="button back" href="#">back</a>
+                <h1>Detail</h1>
+                <a class="button flip" href="#settings">Settings</a>
+            </div>
+        </div>
+        <div id="detail2">
+            <div class="toolbar">
+                <a class="button back" href="#">back</a>
+                <h1>Detail</h1>
+                <a class="button flip" href="#settings">Settings</a>
+            </div>
+        </div>
+        <div id="detail3">
+            <div class="toolbar">
+                <a class="button back" href="#">back</a>
+                <h1>Detail</h1>
+                <a class="button flip" href="#settings">Settings</a>
+            </div>
+        </div>
+        <div id="detail4">
+            <div class="toolbar">
+                <a class="button back" href="#">back</a>
+                <h1>Detail</h1>
+                <a class="button flip" href="#settings">Settings</a>
+            </div>
+        </div>
+        <div id="settings">
+            <div class="toolbar">
+                <h1>Settings</h1>
+                <a class="button cancel" href="#">Cancel</a>
+            </div>
+            <!--
+            <p class="info">
+                当サイトをご利用いただくには、楽天でログインしている必要あります。<br />
+                <a href="https://grp02.id.rakuten.co.jp/rms/nid/vc?__event=login&service_id=p11">＞＞楽天でログインする＜＜</a>
+            </p>
+            -->
+            <ul class="rounded">
+                <li><input placeholder="Affiliate Id" type="text" name="afId" id="afId" /></li>
+            <!--
+                <li><input placeholder="Developer Id" type="text" name="devId" id="devId" /></li>
+            -->
+            </ul>
+            <center><input type="button" id="save" value="Save" /></center>
+            <!-- <input type="button" class="whiteButton" id="save" value="Save" /> -->
+        </div>
+    </body>
+</html>

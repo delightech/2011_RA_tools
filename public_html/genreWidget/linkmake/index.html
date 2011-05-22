@@ -1,0 +1,150 @@
+<html>
+    <head>
+        <title>ジャンル選択アフィリエイト</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <link type="text/css" rel="stylesheet" media="screen" href="css/index.css">
+        <script type="text/javascript" src="js/jquery-1.5.1.min.js"></script>
+        <!-- <script type="text/javascript" src="js/genre.js"></script> -->
+        <script type="text/javascript">
+            $(document).ready(function(){
+                init();
+                /*メモ
+                 * 空白で区切ると複数のid、classの組み合わせで処理を適用できる。
+                 * カンマ区切りだと指定したid、class全てに処理を適用してしまう。
+                 */
+                $('form#search').submit(search);
+            });
+            function init(){
+                var apiURL = 'http://api.rakuten.co.jp/rws/3.0/json?';
+                $.ajax({
+                    type: 'GET',
+                    url: apiURL,
+                    data: {
+                        "developerId": "e486ffafeed3dd3e47b13157558631b7",     //localStorage.devId
+                        "affiliateId": "0bcac755.75c99406.0bcac756.d6fa9ba5",  //localStorage.afId
+                        "operation": "GenreSearch",
+                        "version": "2007-04-11",
+                        "genreId": 0
+                    },
+//                    async: false,
+                    dataType: 'jsonp',
+                    jsonp: 'callBack',
+                    success: function(json) {
+                        if(json.Header.Status == 'Success') {
+                            for (var i=0; i<json.Body.GenreSearch.child.length; i++) {
+                                $('#genreId').append('<option value="' + json.Body.GenreSearch.child[i].genreId + '">' + json.Body.GenreSearch.child[i].genreName + '</option>');
+                            }
+                        }
+                    }
+                });
+            }
+
+            /**
+             * 楽天WEBサービスAPIで商品検索をする関数
+             * @param reqPage ページ番号
+             */
+            function search() {
+                /*
+                 * reqPageは、#searchのイベントハンドラとしても使っているので、
+                 * オブジェクトが入ってくることもある。
+                 * isNaNで数値かチェックして、trueならデフォルト(1)を設定しておく。
+                 */
+                var sort = $("input[name=sort]:checked").val();
+                var genreId = $('#genreId').children(':selected').val();
+                var keyword = $('#keyword').val();
+                var NGKeyword = $('#NGKeyword').val();
+                var minPrice = $('#minPrice').val();
+                var maxPrice = $('#maxPrice').val();
+                var orFlag = $("input[name=orFlag]:checked").val();
+                var developerId = $('#developerId').val();
+                var affiliateId = $('#affiliateId').val();
+                if (sort == '') sort = '-affiliateRate';
+                if (genreId == 0 && keyword == '') {
+                    alert('ジャンルを選択するか、検索文字列を入力してください');
+                    return false;
+                }
+                if (minPrice != '') {
+                    if (isNaN(minPrice)) {
+                        alert('価格は数値を入力してください');
+                        return false;
+                    }
+                } else {
+                    minPrice = 0;
+                }
+                if (maxPrice != '') {
+                    if (isNaN(maxPrice)) {
+                        alert('価格は数値を入力してください');
+                        return false;
+                    }
+                    if (maxPrice < minPrice) {
+                        alert('価格帯が不正です');
+                        return false;
+                    }
+                }
+                var jquerySrc = '<script type="text/javascript" src="http://lightning-develop.appspot.com/genreWidget/blogparts/js/jquery-1.5.1.min.js"><\/script>';
+
+                var source = '<script type="text/javascript">' +
+                    'sort = "' + sort + '";' +
+                    'genreId = "' + genreId + '";' +
+                    'keyword = "' + keyword + '";' +
+                    'NGKeyword = "' + NGKeyword + '";' +
+                    'minPrice = "' + minPrice + '";' +
+                    'maxPrice = "' + maxPrice + '";' +
+                    'orFlag = "' + orFlag + '";' +
+                    'developerId = "' + developerId + '";' +
+                    'affiliateId = "' + affiliateId + '";' +
+                    '<\/script>' +
+                    '<script type="text/javascript" charset="utf-8" src="http://lightning-develop.appspot.com/genreWidget/blogparts/js/genre.js"><\/script>' +
+                    '<div id="rakuten_home"></div>';
+
+                $('#source').val(jquerySrc + source);
+                // previewはjqueryがいらない。jqueryをロードするとページがリロードされてしまう。
+                $('#preview').append(source);
+                return false;
+            }
+        </script>
+    </head>
+    <body bgcolor="lightgray">
+    <!-- <body onload="setDefaultGenre();"> -->
+        <div align="center">
+            <div align="center" style="background-color:crimson; width:500">
+                <h1>ジャンル選択アフィリエイトβ</h1>
+            </div>
+            <div align="left" style="background-color:crimson; width:500">
+                <form id="search" method="POST" >
+                    <b>
+                        デベロッパーID<input placeholder="デベロッパーID" type="text" id="developerId" value="" /><br />
+                        アフィリエイトID<input placeholder="アフィリエイトID" type="text" id="affiliateId" value="" /><br />
+                        <font size="1"><a href="http://webservice.rakuten.co.jp/" target="_blank">＞＞デベロッパーID、アフィリエイトIDはこちらから取得してください</a></font><br />
+                        検索ジャンル<select id="genreId">
+                            <option value="0">全ジャンル</option>
+                        </select><br />
+                        検索ワード<input placeholder="検索ワード" type="text" id="keyword" value="" />&nbsp;
+                        <input type="radio" name="orFlag" value="0" checked />AND検索&nbsp;&nbsp;
+                        <input type="radio" name="orFlag" value="1" />OR検索<br />
+                        除外ワード<input placeholder="除外ワード" type="text" id="NGKeyword" value="" /><br />
+                        価格<input placeholder="最低金額" type="text" id="minPrice" value="" />&nbsp;円&nbsp;～
+                        <input placeholder="最高金額" type="text" id="maxPrice" value="" />&nbsp;円<br />
+                        <small>
+                            <input type="radio" name="sort" value="-affiliateRate" checked />料率が高い順&nbsp;
+                            <input type="radio" name="sort" value="-itemPrice" />価格が高い順&nbsp;
+                            <input type="radio" name="sort" value="+itemPrice" />価格が安い順&nbsp;<br />
+                            <input type="radio" name="sort" value="-reviewCount" />レビューが多い順&nbsp;
+                            <input type="radio" name="sort" value="-reviewAverage" />平均レビューが高い順
+                        </small>
+                        <input type="submit" value="検索" style="width:500px" />
+                        ソース<br />
+                    </b>
+                    <textarea id="source" style="width:500px" ></textarea>
+                </form>
+            </div>
+        </div>
+<br>
+※仕様は予告無く変更することがあります。ご了承ください。<br>
+<br>
+        <img src="http://code.google.com/appengine/images/appengine-silver-120x30.gif" 
+alt="Powered by Google App Engine" /><br />
+        プレビュー<br />
+        <div id="preview"></div>
+    </body>
+</html>

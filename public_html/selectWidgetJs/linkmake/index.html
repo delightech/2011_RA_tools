@@ -1,0 +1,366 @@
+<html>
+    <head>
+        <title>Affiliate Tool</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <link type="text/css" rel="stylesheet" media="screen" href="css/index.css">
+        <script type="text/javascript" src="js/jquery-1.5.1.min.js"></script>
+        <!-- <script type="text/javascript" src="js/genre.js"></script> -->
+        <script type="text/javascript">
+            var itemArray = new Array();
+            $(document).ready(function(){
+                init();
+                /*メモ
+                 * 空白で区切ると複数のid、classの組み合わせで処理を適用できる。
+                 * カンマ区切りだと指定したid、class全てに処理を適用してしまう。
+                 */
+                $('form#search').submit(search);
+            });
+            function init(){
+                var apiURL = 'http://api.rakuten.co.jp/rws/3.0/json?';
+                $.ajax({
+                    type: 'GET',
+                    url: apiURL,
+                    data: {
+                        "developerId": "e486ffafeed3dd3e47b13157558631b7",
+                        "affiliateId": "0bcac755.75c99406.0bcac756.d6fa9ba5",
+                        "operation": "GenreSearch",
+                        "version": "2007-04-11",
+                        "genreId": 0
+                    },
+//                    async: false,
+                    dataType: 'jsonp',
+                    jsonp: 'callBack',
+                    success: function(json) {
+                        if(json.Header.Status == 'Success') {
+                            for (var i=0; i<json.Body.GenreSearch.child.length; i++) {
+                                $('#genreId').append('<option value="' + json.Body.GenreSearch.child[i].genreId + '">' + json.Body.GenreSearch.child[i].genreName + '</option>');
+                            }
+                        }
+                    }
+                });
+            }
+
+            /**
+             * 楽天WEBサービスAPIで商品検索をする関数
+             * @param reqPage ページ番号
+             * @param sort    ソート条件
+             */
+            function search(reqPage, sort) {
+                /*
+                 * reqPageは、#searchのイベントハンドラとしても使っているので、
+                 * オブジェクトが入ってくることもある。
+                 * isNaNで数値かチェックして、trueならデフォルト(1)を設定しておく。
+                 */
+                if (isNaN(reqPage)) reqPage = 1;
+                if (sort == undefined) sort = '-affiliateRate';
+                var apiURL = 'http://api.rakuten.co.jp/rws/3.0/json?';
+                var genreId = $('#genreId').children(':selected').val();
+                var keyword = $('#keyword').val();
+                var NGKeyword = $('#NGKeyword').val();
+                var minPrice = $('#minPrice').val();
+                var maxPrice = $('#maxPrice').val();
+                var orFlag = $("input[name=orFlag]:checked").val();
+                if (genreId == 0 && keyword == '') {
+                    alert('ジャンルを選択するか、検索文字列を入力してください');
+                    return false;
+                }
+                var searchData = {
+                        "developerId": "e486ffafeed3dd3e47b13157558631b7",
+                        "affiliateId": "0bcac755.75c99406.0bcac756.d6fa9ba5",
+                        "operation": "ItemSearch",
+                        "genreId": genreId,
+                        "version" : "2010-09-15",
+                        "hits": "10",
+                        "page": reqPage,
+                        "sort": sort
+                }
+                if (keyword != '') searchData.keyword = keyword;
+                if (NGKeyword != '') searchData.NGKeyword = NGKeyword;
+                if (minPrice != '') {
+                    if (isNaN(minPrice)) {
+                        alert('価格は数値を入力してください');
+                        return false;
+                    }
+                    searchData.minPrice = minPrice;
+                } else {
+                    searchData.minPrice = 0;
+                }
+                if (maxPrice != '') {
+                    if (isNaN(maxPrice)) {
+                        alert('価格は数値を入力してください');
+                        return false;
+                    }
+                    if (maxPrice >= minPrice) {
+                        searchData.maxPrice = maxPrice;
+                    } else {
+                        alert('価格帯が不正です');
+                        return false;
+                    }
+                }
+                $.ajax({
+                    type: 'GET',
+                    url: apiURL,
+                    data: searchData,
+//                    async: false,
+                    dataType: 'jsonp',
+                    jsonp: 'callBack',
+                    success: function(json) {
+                        // 初期化
+                        $('#resultsTitle').remove();
+                        $('#sort').remove();
+                        $('#page_header').remove();
+                        $('#results').remove();
+                        $('#page_footer').remove();
+
+                        if(json.Header.Status == 'Success') {
+                            // 全商品件数
+                            var count = json.Body.ItemSearch.count;
+                            // 現在のページ番号
+                            var page = json.Body.ItemSearch.page;
+                            // 検索結果の何件目からか
+                            var first = json.Body.ItemSearch.first;
+                            // 検索結果の何件目までか
+                            var last = json.Body.ItemSearch.last;
+                            // 総ページ数(最大100)
+                            var totalPageCnt = json.Body.ItemSearch.pageCount;
+
+                            if (count > 0) {
+                                var sortHash = {'-affiliateRate': '料率が高い順', '-itemPrice': '価格が高い順', '+itemPrice': '価格が安い順', '-reviewCount': 'レビューが多い順', '-reviewAverage': '平均レビューが高い順'};
+                                var sortHashLength = 5;
+                                // ソート
+                                $('#home').append('<div id="sort" />');
+                                var i = 0;
+                                for (var key in sortHash) {
+                                    if(key == sort) {
+                                        $('#sort').append('<small>' + sortHash[key] + '</small>');
+                                    } else {
+                                        $('#sort').append('<a href="#" onClick="paging(' + reqPage + ', \'' + key + '\');"><small>' + sortHash[key] + '</small></a>');
+                                    }
+                                    if ((sortHashLength - 1) != i) $('#sort').append('&nbsp;&nbsp;|&nbsp;&nbsp;');
+                                    i++;
+                                }
+                                // ページング
+                                $('#home').append('<div id="page_header">' + calcPagePosition(reqPage, sort, totalPageCnt) + '&nbsp;&nbsp;' + first + '～' + last + '件 (全' + count + '件)<hr /></div>');
+                                // 検索結果
+                                $('#home').append('<div id="results" />');
+                                $('#results').append('<table width="800" id="items" border="1" />');
+                                $('#items').append('<tr bgcolor="crimson"><th>画像</th><th>商品名</th><th>ﾚﾋﾞｭｰ平均<br />(件数)</th><th>価格</th><th>ｱﾌｨﾘｴｲﾄ<br />料率</th><th>商品追加ボタン</th></tr>');
+                                $.each(json.Body.ItemSearch.Items.Item, function(i, item) {
+                                    // ブログパーツ用パラメータ
+                                    var itemCode  = item.itemCode;
+                                    var itemName  = item.itemName;
+                                    var itemPrice = item.itemPrice;
+                                    var affiliateUrl  = item.affiliateUrl;
+
+                                    // リンク作成用パラメータ
+                                    var catchcopy = item.catchcopy;
+                                    var itemCaption = item.itemCaption;
+                                    var reviewCount   = item.reviewCount;
+                                    var reviewAverage = item.reviewAverage;
+                                    var itemUrl       = item.itemUrl;
+                                    var affiliateRate = item.affiliateRate;
+                                    // デフォルトはNO IMAGE画像
+                                    var imageUrl = 'http://thumbnail.image.rakuten.co.jp/@0_mall/bookcenter/cabinet/noimage.gif?_ex=96x96';
+                                    if (item.imageFlag == 1) {
+                                        imageUrl = item.mediumImageUrl;
+                                    }
+                                    // リンクはページルートのページIDのdiv直下にul,li,aで貼らないと機能しないっぽい。
+                                    $('#items').append('<tr height="128">' +
+                                            '<td width="128" align="center"><a href="' + itemUrl + '" target="_blank" ><image src="' + imageUrl + '" /></a></td>' +
+                                            '<td width="360"><a href="' + itemUrl + '" target="_blank" ><small>' + catchcopy + '</small>' + itemName + '</a><br /><br /><small>' + itemCaption.substring(0, 50) + '...</small></td>' +
+                                            '<td width="80" align="right">' + reviewAverage + '(' + reviewCount + ')</a></td>' +
+                                            '<td width="100" align="right">￥' + itemPrice + '</td>' +
+                                            '<td width="60" align="right">' + affiliateRate + '％</td>' +
+                                            //'<td width="72"align="center"><a href="#" onClick="addItem(\'' + itemCode +  '\',\'' + itemName +  '\',\'' + itemPrice +  '\',\'' + affiliateUrl + '\');">追加</a></td>' +
+                                            '<td width="72"align="center"><input type="button" value="追加" onClick="addItem(\'' + itemCode +  '\',\'' + sanitize(itemName) +  '\',\'' + itemPrice +  '\',\'' + affiliateUrl + '\',\'' + imageUrl + '\');" /></td>' +
+                                            '</tr>');
+                                });
+                                $('#home').append('<div id="page_footer"><hr />' + calcPagePosition(reqPage, sort, totalPageCnt) + '&nbsp;&nbsp;' + first + '～' + last + '商品 (全' + count + '件)</div>');
+                            }
+                        } else {
+                            $('#home').append('<h4 id="resultsTitle">お探しの商品はありません</h4>');
+                        }
+                    }
+                });
+                return false;
+            }
+            function paging(page, sort) {
+                search(page, sort);
+            }
+            function addItem(itemCode, itemName, itemPrice, affiliateUrl, imageUrl) {
+                for (var i=0; i<itemArray.length; i++) {
+                    if (itemArray[i][0] == itemCode) return;
+                }
+                itemArray.push(new Array(itemCode, itemName, itemPrice, affiliateUrl, imageUrl));
+                var source = '<script type="text/javascript">itemArray=new Array(';
+                for (var i=0; i<itemArray.length; i++) {
+                    // 以下の配列を配列にセットしてパラメータとする
+                    // [商品名,商品価格,ｱﾌｨﾘｴｲﾄURL,smallImageUrl,mediumImageUrl]
+                    source += '["' + itemArray[i][1] +  '","' + itemArray[i][2] +  '","' + itemArray[i][3] +  '","' + itemArray[i][4] + '"]';
+                    if ((itemArray.length -1) != i) source += ',';
+                }
+                source += ');<\/script><script type="text/javascript" src="http://webtest.zouri.jp/selectWidgetJs/blogparts/js/select.js"><\/script>';
+                $('#source').val(source);
+                alert('商品を追加しました');
+            }
+            /**
+             * サニタイズ
+             */
+            function sanitize(str) {
+                // TODO コメント訂正
+                // '"があると、文字列が途中で切れるのでエスケープの必要がある。実体参照でも同じ。
+                var sanitizeStr = '';
+                for (var i=0; i<str.length; i++) {
+                    switch (str[i]) {
+                    case "'":
+                        sanitizeStr += "\\&#39;";
+                        break;
+                    case '"':
+                        sanitizeStr += "\\&quot;";
+                        break;
+                    case '&':
+                        sanitizeStr += "&amp;";
+                        break;
+                    case '<':
+                        sanitizeStr += "&lt;";
+                        break;
+                    case '>':
+                        sanitizeStr += "&gt;";
+                        break;
+                    default:
+                        sanitizeStr += str[i];
+                        break;
+                    }
+                }
+                return sanitizeStr;
+            }
+            function calcPagePosition(reqPage, sort, totalPageCnt) {
+                var aTag = '';
+                var delta = 5;
+                var dispCnt = 9;
+                /**
+                 * ■ページ表示パターン
+                 * ・前後にdeltaがあるパターン(reqPageのみ非リンクとする)
+                 *   (reqPage - delta) > 0
+                 *   (reqPage + delta) <= totalPageCnt
+                 *
+                 * ・後にdeltaがないパターン(reqPageのみ非リンクとする)
+                 *   (reqPage - delta) > 0
+                 *   (reqPage + delta) > totalPageCnt
+                 *
+                 * ・前にdeltaがないパターン(reqPageのみ非リンクとする)
+                 *   (reqPage - delta) <= 0
+                 */
+                if ((reqPage - delta) > 0 && (reqPage + delta) <= totalPageCnt) {
+                    for (var i=1; i<dispCnt + 1; i++) {
+                        // 最後のページまでのリンクを表示したらループ終了
+                        if (((reqPage - delta) + i) > totalPageCnt) break;
+                        if (reqPage == ((reqPage - delta) + i)) {
+                            aTag += reqPage + '&nbsp;&nbsp;|&nbsp;&nbsp;';
+                        } else {
+                            aTag += '<a href="#" onClick="paging('+ ((reqPage - delta) + i) + ', \'' + sort + '\');">' + ((reqPage - delta) + i) + '</a>&nbsp;&nbsp;|&nbsp;&nbsp;';
+                        }
+                    }
+                } else if ((reqPage - delta) > 0 && (reqPage + delta) > totalPageCnt) {
+                    for (var i=1; i<dispCnt + 1; i++) {
+                        var pageNum = (totalPageCnt - dispCnt) + i;
+                        // 最後のページまでのリンクを表示したらループ終了
+                        if (pageNum > totalPageCnt) break;
+                        if (reqPage == pageNum) {
+                            aTag += reqPage + '&nbsp;&nbsp;|&nbsp;&nbsp;';
+                        } else {
+                            if (pageNum <= 0) continue;
+                            aTag += '<a href="#" onClick="paging('+ pageNum + ', \'' + sort + '\');">' + pageNum + '</a>&nbsp;&nbsp;|&nbsp;&nbsp;';
+                        }
+                    }
+                } else {
+                    for (var i=1; i<dispCnt + 1; i++) {
+                        // 最後のページまでのリンクを表示したらループ終了
+                        if (i > totalPageCnt) break;
+                        if (reqPage == i) {
+                            aTag += reqPage + '&nbsp;&nbsp;|&nbsp;&nbsp;';
+                        } else {
+                            if (i <= 0) continue;
+                            aTag += '<a href="#" onClick="paging('+ i + ', \'' + sort + '\');">' + i + '</a>&nbsp;&nbsp;|&nbsp;&nbsp;';
+                        }
+                    }
+                }
+                return aTag;
+            }
+        </script>
+    </head>
+    <body bgcolor="lightgray">
+    <!-- <body onload="setDefaultGenre();"> -->
+        <div id="home" align="center">
+            <div align="center" style="background-color:crimson; width:500">
+                <h1>商品選択アフィリエイトβ（開発中）</h1>
+            </div>
+            <div align="left" style="background-color:crimson; width:500">
+                <form id="search" method="POST" >
+<!--ランキングジャンル選択 start-->
+<!--
+<input type="hidden" name="genreId1">
+<input type="hidden" name="genreId2">
+<input type="hidden" name="genreId3">
+<input type="hidden" name="genreId4">
+<input type="hidden" name="genreId5">
+<div id="genreIdAllDIV">
+<table width="500" cellpadding="0" cellspacing="0" border="0" align="right">
+<tr><td>
+<font size="-2">ランキングジャンルを選択して下さい</font>
+
+</td></tr>
+<tr><td>
+<font size="-1"><b>楽天市場</b></font>
+</td></tr>
+<tr><td>
+<div id="genreId1DIV">
+<img src="img/t.gif" width="10" height="20" alt="">
+<img src="img/arrow_2.gif" width="18" height="20" alt="">
+<select name="genreId1Select" onchange="setGenre(1, this.value);"></select>
+</div>
+<div id="genreId2DIV" style="display:none">
+<img src="img/t.gif" width="20" height="20" alt="">
+<img src="img/arrow_2.gif" width="18" height="20" alt="">
+<select name="genreId2Select" onchange="setGenre(2, this.value);"></select>
+</div>
+<div id="genreId3DIV" style="display:none">
+
+<img src="img/t.gif" width="30" height="20" alt="">
+<img src="img/arrow_2.gif" width="18" height="20" alt="">
+<select name="genreId3Select" onchange="setGenre(3, this.value);"></select>
+</div>
+<div id="genreId4DIV" style="display:none">
+<img src="img/t.gif" width="40" height="20" alt="">
+<img src="img/arrow_2.gif" width="18" height="20" alt="">
+<select name="genreId4Select" onchange="setGenre(4, this.value);"></select>
+</div>
+<div id="genreId5DIV" style="display:none">
+<img src="img/t.gif" width="50" height="20" alt="">
+<img src="img/arrow_2.gif" width="18" height="20" alt="">
+<select name="genreId5Select" onchange="setGenre(5, this.value);"></select>
+</div>
+</td></tr>
+</table>
+</div>
+ -->
+<!--ランキングジャンル選択 end-->
+                    <b>
+                        検索ジャンル<select id="genreId">
+                            <option value="0">全ジャンル</option>
+                        </select><br />
+                        検索ワード<input placeholder="検索ワード" type="text" id="keyword" value="" />&nbsp;
+                        <input type="radio" name="orFlag" value="0" checked />AND検索&nbsp;&nbsp;
+                        <input type="radio" name="orFlag" value="1" />OR検索<br />
+                        除外ワード<input placeholder="除外ワード" type="text" id="NGKeyword" value="" /><br />
+                        価格<input placeholder="最低金額" type="text" id="minPrice" value="" />&nbsp;円&nbsp;～
+                        <input placeholder="最高金額" type="text" id="maxPrice" value="" />&nbsp;円<br />
+                        <input type="submit" value="検索" style="width:250px" /><input type="reset" value="クリア" style="width:250px" /><br />
+                        ソース<br />
+                    </b>
+                    <textarea id="source" style="width:500px" ></textarea>
+                </form>
+            </div>
+        </div>
+    </body>
+</html>

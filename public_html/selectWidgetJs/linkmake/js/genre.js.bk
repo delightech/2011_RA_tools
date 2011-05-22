@@ -1,0 +1,183 @@
+function setGenre(level, genreId){
+  var genreId1 = document.forms[0].genreId1;
+  var genreId2 = document.forms[0].genreId2;
+  var genreId3 = document.forms[0].genreId3;
+  var genreId4 = document.forms[0].genreId4;
+  var genreId5 = document.forms[0].genreId5;
+  var genreId1Select = document.forms[0].genreId1Select;
+  var genreId2Select = document.forms[0].genreId2Select;
+  var genreId3Select = document.forms[0].genreId3Select;
+  var genreId4Select = document.forms[0].genreId4Select;
+  var genreId5Select = document.forms[0].genreId5Select;
+  var genreId1DIV = document.getElementById("genreId1DIV");
+  var genreId2DIV = document.getElementById("genreId2DIV");
+  var genreId3DIV = document.getElementById("genreId3DIV");
+  var genreId4DIV = document.getElementById("genreId4DIV");
+  var genreId5DIV = document.getElementById("genreId5DIV");
+  if(level == 0){
+    genreId1.value = "0";
+    genreId2.value = "";
+    genreId3.value = "";
+    genreId4.value = "";
+    genreId5.value = "";
+    genreId1Select.style.display = "none";
+    genreId2Select.style.display = "none";
+    genreId3Select.style.display = "none";
+    genreId4Select.style.display = "none";
+    genreId5Select.style.display = "none";
+    genreId1DIV.style.display = "none";
+    genreId2DIV.style.display = "none";
+    genreId3DIV.style.display = "none";
+    genreId4DIV.style.display = "none";
+    genreId5DIV.style.display = "none";
+    clearSingleGenreSelect(genreId1Select);
+    updateSingleGenreSelect(0, genreId1Select, genreId1DIV, true);
+  }
+  if(level == 1){
+    genreId1.value = genreId;
+    genreId2.value = "";
+    genreId3.value = "";
+    genreId4.value = "";
+    genreId5.value = "";
+    genreId2Select.style.display = "none";
+    genreId3Select.style.display = "none";
+    genreId4Select.style.display = "none";
+    genreId5Select.style.display = "none";
+    genreId2DIV.style.display = "none";
+    genreId3DIV.style.display = "none";
+    genreId4DIV.style.display = "none";
+    genreId5DIV.style.display = "none";
+    clearSingleGenreSelect(genreId2Select);
+    updateSingleGenreSelect(genreId, genreId2Select, genreId2DIV, false);
+  }
+  if(level == 2){
+    genreId2.value = genreId;
+    genreId3.value = "";
+    genreId4.value = "";
+    genreId5.value = "";
+    genreId3Select.style.display = "none";
+    genreId4Select.style.display = "none";
+    genreId5Select.style.display = "none";
+    genreId3DIV.style.display = "none";
+    genreId4DIV.style.display = "none";
+    genreId5DIV.style.display = "none";
+    clearSingleGenreSelect(genreId3Select);
+    updateSingleGenreSelect(genreId, genreId3Select, genreId3DIV, false);
+  }
+  if(level == 3){
+    genreId3.value = genreId;
+    genreId4.value = "";
+    genreId5.value = "";
+    genreId4Select.style.display = "none";
+    genreId5Select.style.display = "none";
+    genreId4DIV.style.display = "none";
+    genreId5DIV.style.display = "none";
+    clearSingleGenreSelect(genreId4Select);
+    updateSingleGenreSelect(genreId, genreId4Select, genreId4DIV, false);
+  }
+  if(level == 4){
+    genreId4.value = genreId;
+    genreId5.value = "";
+    genreId5Select.style.display = "none";
+    genreId5DIV.style.display = "none";
+    clearSingleGenreSelect(genreId5Select);
+    updateSingleGenreSelect(genreId, genreId5Select, genreId5DIV, false);
+  }
+  if(level == 5){
+    genreId5.value = genreId;
+  }
+}
+function clearSingleGenreSelect(select){
+  while(select.firstChild){
+    select.removeChild(select.firstChild);
+  }
+}
+function updateSingleGenreSelect(genreId, nextSelect, nextDiv, isFirst){
+  if(genreId.length == 0) return;
+  searchGenre(genreId, function(json){
+    updateSingleGenreSelect2(nextSelect, json.Body.GenreSearch.child, nextDiv, isFirst);
+  });
+}
+
+function searchGenre(genreId, callBack){
+  var xhr;
+  if(window.ActiveXObject){
+    try {
+      xhr = new ActiveXObject("Msxml2.XMLHTTP");
+    } catch (e) {
+      try {
+        // for less than IE5.x
+        xhr = new ActiveXObject("Microsoft.XMLHTTP");
+      } catch (e2) {
+        xhr = null;
+      }
+    }
+  } else if(window.XMLHttpRequest){
+    xhr = new XMLHttpRequest();
+  } else {
+    xhr = null;
+  }
+  if(xhr == null) return;
+  xhr.open("get", "genre/" + genreId + ".json", true);
+  xhr.onreadystatechange = function(){
+    // readyState == 4 => XMLHttpRequest is ready
+    if (xhr.readyState == 4){
+      if(xhr.status == 200){
+        // eval("("+xhr.responseText+")") => text to JSON object
+        callBack(eval("("+xhr.responseText+")"));
+      }
+    }
+  };
+  xhr.send(null);
+}
+function updateSingleGenreSelect2(select, choice, div, isFirst){
+  if(choice == null) return;
+  var defaultOption = document.createElement("option");
+  defaultOption.value = "";
+  if(isFirst){
+    defaultOption.appendChild(document.createTextNode("デイリー総合ランキング"));
+  }else{
+    defaultOption.appendChild(document.createTextNode("---------------▼選択してください。---------------"));
+  }
+  select.appendChild(defaultOption);
+  var count = 0;
+  // create option tag with value and body.
+  for(var i in choice){
+    var option = document.createElement("option");
+    option.value = choice[i].genreId;
+    option.appendChild(document.createTextNode(choice[i].genreName));
+    select.appendChild(option);
+    count++;
+  }
+  if(count > 0){
+    select.style.display = "inline";
+    div.style.display = "block";
+    // use timer to avoid malfunction in IE
+    setTimeout(updateGenreSelectChoice, 1);
+  }
+}
+function updateGenreSelectChoice(){
+  var genreId1 = document.forms[0].genreId1.value;
+  var genreId2 = document.forms[0].genreId2.value;
+  var genreId3 = document.forms[0].genreId3.value;
+  var genreId4 = document.forms[0].genreId4.value;
+  var genreId5 = document.forms[0].genreId5.value;
+  var genreId1Select = document.forms[0].genreId1Select;
+  var genreId2Select = document.forms[0].genreId2Select;
+  var genreId3Select = document.forms[0].genreId3Select;
+  var genreId4Select = document.forms[0].genreId4Select;
+  var genreId5Select = document.forms[0].genreId5Select;
+  if(genreId1 != "") genreId1Select.value = genreId1;
+  if(genreId2 != "") genreId2Select.value = genreId2;
+  if(genreId3 != "") genreId3Select.value = genreId3;
+  if(genreId4 != "") genreId4Select.value = genreId4;
+  if(genreId5 != "") genreId5Select.value = genreId5;
+}
+function setDefaultGenre(){
+  setGenre(0, 0);
+  setGenre(1, "");
+  setGenre(2, "");
+  setGenre(3, "");
+  setGenre(4, "");
+  setGenre(5, "");
+}
