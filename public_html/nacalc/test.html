@@ -1,0 +1,40 @@
+<html>
+    <head>
+        <title>ナトリウム計算機</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <link type="text/css" rel="stylesheet" media="screen" href="index.css">
+        <link type="text/css" rel="stylesheet" media="screen" href="jqtouch/jqtouch.css">
+        <link type="text/css" rel="stylesheet" media="screen" href="themes/jqt/theme.css">
+        <script type="text/javascript" src="jqtouch/jquery.js"></script>
+        <script type="text/javascript" src="jqtouch/jqtouch.js"></script>
+        <script type="text/javascript">
+            var jQT = $.jQTouch({
+                icon: 'icon.png',
+                //addGlossToIcon: true,
+                statusBar: 'black',
+            });
+            $(document).ready(function(){
+                $('#calc').click(calc);
+            });
+            function calc(){$
+                var result = ($('#sesshu').val() / $('#seibun').val()) * $('#natrium').val() * 2.54;$
+                $('#result').text(result);$
+            }$      
+
+        </script>
+    </head>
+    <body>
+        <div id="home">
+            <div class="toolbar">
+                <h1>ナトリウム計算機</h1>
+            </div>
+            <ul class="rounded">
+                <li><input placeholder="摂取量" type="text" id="sesshu" value="" /></li>
+                <li><input placeholder="成分表示" type="text" id="seibun" value="" /></li>
+                <li><input placeholder="ナトリウム" type="text" id="natrium" value="" /></li>
+            </ul>
+            <center><input type="button" id="calc" value="計算" /></center>
+            <center><span id="result"></span></center>
+        </div>
+    </body>
+</html>

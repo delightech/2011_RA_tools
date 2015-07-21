@@ -11,52 +11,39 @@
 	*{ padding:0px; margin:0px; }
 	img{ border: none; -ms-interpolation-mode: bicubic; }
 	body{ padding:10px; text-align:center; background:#fafafa; }
-	
 	#wrapper{ position:absolute; left:20%; padding-top:0px; width:650px;}
-	
-	#menuwrapper{ position:relative; height:150px;}
+	#menuwrapper{ position:relative; height:110px;}
 	#menuframe{position:absolute; bottom:0; left:0;}
 	.menuitem{ position:fixed relative; bottom:0px; display:inline-block; }
 </style>
 <script type="text/javascript">
 $(function(){
-////http://api.rakuten.co.jp/rws/2.0/rest?developerId=e486ffafeed3dd3e47b13157558631b7&operation=BooksGenreSearch&version=2009-03-26&booksGenreId=001005005004
-////http://api.rakuten.co.jp/rws/3.0/json?developerId=e486ffafeed3dd3e47b13157558631b7&affiliateId=0bcac755.75c99406.0bcac756.d6fa9ba5&operation=BooksBookSearch&version=2011-01-27&booksGenreId=001005005004
-//    $.ajax({
-//        type: 'GET',
-//        url : 'http://api.rakuten.co.jp/rws/3.0/json?',
-//        data: {
-//            "developerId": "e486ffafeed3dd3e47b13157558631b7",
-//            "affiliateId": "0bcac755.75c99406.0bcac756.d6fa9ba5",
-//            "operation": "BooksBookSearch",
-//            "version" : "2011-01-27",
-//            //"booksGenreId": "001005005004",
-//            "booksGenreId": "001006004004",
-//            "sort": "sales"
-//	    },
-//        dataType: 'jsonp',
-//        jsonp: 'callBack',
-//        success: function(json) {
-//            //$('.menuitem').remove();
-//            if(json.Header.Status == 'Success') {
-//            	var num = 0;
-//            	$.each(json.Body.BooksBookSearch.Items.Item, function(i, item) {
-//            		if (num > 5) {
-//            			return;
-//            		}
-//            		var imageUrl     = item.largeImageUrl;
-//            		if (imageUrl.match(/noimage_01\.gif/)) {
-//            			return;
-//            		}
-//            		var affiliateUrl = item.affiliateUrl;
-//            		//$('#menuitem').append('<a href="' + affiliateUrl + '" target="_blank" class="menuitem"><img src="' + imageUrl + '" /></a>');
-//            		$('#aflUrl' + num).attr('href', affiliateUrl);
-//            		$('#imgUrl' + num).attr('src' , imageUrl);
-//            		num++;
-//            	});
-//            }
-//        }
-//    });
+//http://api.rakuten.co.jp/rws/2.0/rest?developerId=e486ffafeed3dd3e47b13157558631b7&operation=BooksGenreSearch&version=2009-03-26&booksGenreId=001005005004
+//http://api.rakuten.co.jp/rws/3.0/json?developerId=e486ffafeed3dd3e47b13157558631b7&affiliateId=0bcac755.75c99406.0bcac756.d6fa9ba5&operation=BooksBookSearch&version=2011-01-27&booksGenreId=001005005004
+    $.ajax({
+        type: 'GET',
+        url : 'http://api.rakuten.co.jp/rws/3.0/json?',
+        data: {
+            "developerId": "e486ffafeed3dd3e47b13157558631b7",
+            "affiliateId": "0bcac755.75c99406.0bcac756.d6fa9ba5",
+            "operation": "BooksBookSearch",
+            "version" : "2011-01-27",
+            "booksGenreId": "001005005004"
+	    },
+        dataType: 'jsonp',
+        jsonp: 'callBack',
+        success: function(json) {
+            $('.menuitem').remove();
+            if(json.Header.Status == 'Success') {
+            	$.each(json.Body.BooksBookSearch.Items.Item, function(i, item) {
+            		if (i > 5) break;
+            		var imageUrl     = item.mediumImageUrl;
+            		var affiliateUrl = item.affiliateUrl;
+            		$('#menuframe').append('<a href="' + affiliateUrl + '" target="_blank" class="menuitem"><img src="' + imageUrl + '" /></a>');
+            	});
+            }
+        }
+    });
 	$('#mirror').FontEffect({
 	    gradient:true,
 	    mirror:true,
@@ -82,13 +69,13 @@ $(function(){
 		        }, 400);
 		}
 	);
-//	$('.menuitem img').animate({width: 100}, 0);
-//	$('.menuitem').mouseover(function(){
-//			gridimage = $(this).find('img');
-//			gridimage.stop().animate({width: 200}, 150);
-//		}).mouseout(function(){
-//			gridimage.stop().animate({width: 100}, 150);
-//	});
+	$('.menuitem img').animate({width: 100}, 0);
+	$('.menuitem').mouseover(function(){
+			gridimage = $(this).find('img');
+			gridimage.stop().animate({width: 200}, 150);
+		}).mouseout(function(){
+			gridimage.stop().animate({width: 100}, 150);
+	});
 	tabDisplay('top');
 });
 function tabDisplay(tabName) {
@@ -102,7 +89,7 @@ function tabDisplay(tabName) {
 </head>
 <body bgcolor="lightgray" onload="tabDisplay('top');">
 	<div align="center">
-		<h1 id="hptitle"><a id="mirror" href="index.html">Johnny&#39;s&nbsp;Software&nbsp;Lab</a></h1>
+		<h1 id="hptitle"><a id="mirror" href="http://lightning-develop.appspot.com/index.html">Johnny&#39;s&nbsp;Software&nbsp;Lab</a></h1>
         <div class="container">
 			<div id="top"><br>
 				<h2>Welcome to Johnny's Software Lab</h2><br>
@@ -116,16 +103,14 @@ function tabDisplay(tabName) {
 				Name:Johnny・H・Kikkawa<br><br>
 				Nationality:Japan<br><br>
 				Job:Software Engineering<br><br>
-				about.me:<a href="http://about.me/johnny.k" target="_blank">http://about.me/johnny.k</a><br><br>
-				Blog:<a href="http://shinjukujohnny.hatenablog.jp/" target="_blank">http://shinjukujohnny.hatenablog.jp/</a><br><br>
-				GitHub:<a href="https://github.com/shinjukujohnny" target="_blank">https://github.com/shinjukujohnny</a><br>
+				about.me:<a href="http://about.me/johnny.k">http://about.me/johnny.k</a><br>
 			</div>
 			<div id="works">
 				<br>
-				<a href="genreWidget/linkmake/index.html">楽天ジャンル商品ブログパーツ</a><br>
+				<a href="http://lightning-develop.appspot.com/genreWidget/linkmake/index.html">楽天ジャンル商品ブログパーツ</a><br>
 				ジャンルを軸に、キーワード、価格帯などでお手軽自動更新で楽天商品を紹介できるアフィリエイトツールです。<br>
 				<br>
-				<a href="iphone/index.html">iphone用商品検索twitter投稿ツール</a><br>
+				<a href="http://lightning-develop.appspot.com/iphone/index.html">iphone用商品検索twitter投稿ツール</a><br>
 				iPhone専用のアフィリエイトツールです。キーワードと価格帯で商品を検索し、ツイッターに投稿できます。<br>
 			</div>
 			<div id="links">
@@ -171,19 +156,10 @@ function tabDisplay(tabName) {
 		<div id="wrapper">
 			<div id="menuwrapper">
 				<div id="menuframe">
-					<a id="aflUrl0" href="" class="menuitem"><img id="imgUrl0" src=""></a>
-					<a id="aflUrl1" href="" class="menuitem"><img id="imgUrl1" src=""></a>
-					<a id="aflUrl2" href="" class="menuitem"><img id="imgUrl2" src=""></a>
-					<a id="aflUrl3" href="" class="menuitem"><img id="imgUrl3" src=""></a>
-					<a id="aflUrl4" href="" class="menuitem"><img id="imgUrl4" src=""></a>
 				</div>
 			</div>
-		</div>
-		<br><br><br><br><br><br><br><br><br><br>
-<!--
+		</div><br><br><br><br><br><br>
 		<img src="http://code.google.com/appengine/images/appengine-silver-120x30.gif" alt="Powered by Google App Engine" />
--->
-Copyright &copy; 2010-2011 Johnny.H.K All Rights Reserved
 	</div>
 </body>
 </html>
